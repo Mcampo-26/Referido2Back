@@ -1,11 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { dbConnect } from './src/database/config.js';
-import routerUser from './src/routes/index.js';
+import userRoutes from './src/routes/Usuarios/index.js';
+import qrRoutes from './src/routes/Qr/index.js';
 import morgan from 'morgan';
 import cors from 'cors';
-
-
 
 // Configurar dotenv para leer el archivo .env
 dotenv.config();
@@ -25,13 +24,12 @@ dbConnect()
     // Iniciar el servidor
     const server = app.listen(PORT, () => {
       console.log(`Servidor escuchando en el puerto ${PORT}`);
-      // Abrir el navegador con la URL del servidor
-      //open(`http://localhost:${PORT}`);
     });
   })
   .catch(error => {
     console.error('Error al conectar con la base de datos:', error);
   });
 
-
-app.use('/Usuarios', routerUser);
+// Definir las rutas
+app.use('/Usuarios', userRoutes);
+app.use('/Qr', qrRoutes);
