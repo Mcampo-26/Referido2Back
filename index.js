@@ -15,6 +15,12 @@ const PORT = process.env.PORT || 8080; // Defino el puerto aquí, con opción a 
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
+
 
 // Conectarse a la base de datos
 dbConnect()
