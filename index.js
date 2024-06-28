@@ -5,6 +5,8 @@ import userRoutes from './src/routes/Usuarios/index.js';
 import qrRoutes from './src/routes/Qr/index.js';
 import morgan from 'morgan';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Configurar dotenv para leer el archivo .env
 dotenv.config();
@@ -21,6 +23,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Servir archivos estáticos
+app.use('/qrImagen', express.static(path.join(__dirname, 'qrImagen')));
 
 // Conectarse a la base de datos
 dbConnect()
