@@ -1,19 +1,31 @@
-
-
 import qr from 'qr-image';
 import Qr from "../../models/Qr.js";
+import Usuario from "../../models/Usuario.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+
 // Crear QR
 export const createQr = async (req, res) => {
   try {
-    const { value, nombre, telefono, mail, startTime, endTime } = req.body;
-    const qr = new Qr({ value, nombre, telefono, mail, startTime, endTime });
+    const { userId, value, nombre, telefono, mail, startTime, endTime } = req.body;
+    const qr = new Qr({ userId, value, nombre, telefono, mail, startTime, endTime });
     await qr.save();
     res.status(201).json({ message: "QR creado exitosamente", qr });
   } catch (error) {
     console.error("Error en createQr:", error);
+    res.status(400).send(error.message);
+  }
+};
+
+// Obtener todos los QRs por usuario
+export const getQrsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const qrs = await Qr.find({ userId }).populate('userId', 'nombre email');
+    res.status(200).json(qrs);
+  } catch (error) {
+    console.error("Error en getQrsByUser:", error);
     res.status(400).send(error.message);
   }
 };
@@ -125,8 +137,6 @@ export const useQr = async (req, res) => {
 };
 
 // Generar QR
-
-
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
