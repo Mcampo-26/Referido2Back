@@ -9,15 +9,30 @@ import fs from 'fs';
 export const createQr = async (req, res) => {
   try {
     const { userId, value, nombre, telefono, mail, startTime, endTime } = req.body;
-    const qr = new Qr({ userId, value, nombre, telefono, mail, startTime, endTime });
-    await qr.save();
-    res.status(201).json({ message: "QR creado exitosamente", qr });
+
+    // Generar imagen QR y convertirla a base64
+    const qrImage = qr.imageSync(value, { type: 'png' });
+    const base64Image = qrImage.toString('base64');
+
+    // Crear un nuevo QR con la imagen base64
+    const newQr = new Qr({
+      userId,
+      value,
+      nombre,
+      telefono,
+      mail,
+      startTime,
+      endTime,
+      base64Image
+    });
+
+    await newQr.save();
+    res.status(201).json({ message: "QR creado exitosamente", newQr });
   } catch (error) {
     console.error("Error en createQr:", error);
     res.status(400).send(error.message);
   }
 };
-
 // Obtener todos los QRs por usuario
 export const getQrsByUser = async (req, res) => {
   try {
