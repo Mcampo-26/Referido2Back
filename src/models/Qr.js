@@ -34,6 +34,10 @@ const QRSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  base64Image: {
+    type: String,
+    required: true,
+  },
 });
 
 export default mongoose.model("Qr", QRSchema);
