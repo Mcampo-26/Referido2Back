@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { dbConnect } from './src/database/config.js';
 import userRoutes from './src/routes/Usuarios/index.js';
 import qrRoutes from './src/routes/Qr/index.js';
+import routerRoles from './src/routes/Roles/index.js'; 
 import morgan from 'morgan';
 import cors from 'cors';
 import path from 'path';
@@ -47,3 +48,4 @@ dbConnect()
 // Definir las rutas
 app.use('/Usuarios', userRoutes);
 app.use('/Qr', qrRoutes);
+app.use('/Roles', routerRoles);
