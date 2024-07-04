@@ -6,9 +6,7 @@ const UsuarioSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   telefono: { type: String },
-  role: { type: String, default: 'usuario', enum: ['usuario', 'admin'] },
-
- 
+  role: { type: Schema.Types.ObjectId, ref: 'Role', default: null }, // Referencia opcional al modelo Role
 });
 
 export default model("Usuario", UsuarioSchema);
