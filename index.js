@@ -4,10 +4,12 @@ import { dbConnect } from './src/database/config.js';
 import userRoutes from './src/routes/Usuarios/index.js';
 import qrRoutes from './src/routes/Qr/index.js';
 import routerRoles from './src/routes/Roles/index.js'; 
+import routerEmpresa from './src/routes/Empresa/index.js';
 import morgan from 'morgan';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import routerServicio from './src/routes/Servicio/Index.js';
 
 // Configurar dotenv para leer el archivo .env
 dotenv.config();
@@ -49,3 +51,5 @@ dbConnect()
 app.use('/Usuarios', userRoutes);
 app.use('/Qr', qrRoutes);
 app.use('/Roles', routerRoles);
+app.use ('/Empresa',routerEmpresa)
+app.use('/Servicio', routerServicio)

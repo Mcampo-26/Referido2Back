@@ -23,6 +23,7 @@ export const loginUsuario = async (req, res) => {
 
 
 
+
 // Controlador para el logout de usuario
 export const logoutUsuario = async (req, res) => {
     try {

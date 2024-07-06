@@ -6,25 +6,30 @@ import path from 'path';
 import fs from 'fs';
 
 // Crear QR
+
 export const createQr = async (req, res) => {
   try {
-    const { userId, value, nombre, telefono, mail, startTime, endTime } = req.body;
+    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime } = req.body;
 
-    // Generar imagen QR y convertirla a base64
-    const qrImage = qr.imageSync(value, { type: 'png' });
-    const base64Image = qrImage.toString('base64');
-
-    // Crear un nuevo QR con la imagen base64
+    // Crear el objeto de QR para obtener el ID
     const newQr = new Qr({
       userId,
+      assignedTo,
+      empresaId,
       value,
       nombre,
       telefono,
       mail,
       startTime,
-      endTime,
-      base64Image
+      endTime
     });
+
+    const qrData = `id: ${newQr._id}\nTexto: ${value}\nNombre: ${nombre}\nTeléfono: ${telefono}\nCorreo: ${mail}\nHora de inicio: ${startTime}\nHora de fin: ${endTime}`;
+    const qrImage = qr.imageSync(qrData, { type: 'png', ec_level: 'M', size: 10, margin: 1 });
+    const base64Image = qrImage.toString('base64');
+
+    // Asignar la imagen base64 al QR antes de guardarlo
+    newQr.base64Image = base64Image;
 
     await newQr.save();
     res.status(201).json({ message: "QR creado exitosamente", newQr });
@@ -33,17 +38,24 @@ export const createQr = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
-// Obtener todos los QRs por usuario
-export const getQrsByUser = async (req, res) => {
+
+
+
+
+
+export const getQrsByAssignedUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const qrs = await Qr.find({ userId }).populate('userId', 'nombre email');
+    const qrs = await Qr.find({ assignedTo: userId })
+                        .populate('empresaId', 'name')
+                        .populate('assignedTo', 'nombre');
     res.status(200).json(qrs);
   } catch (error) {
-    console.error("Error en getQrsByUser:", error);
+    console.error("Error en getQrsByAssignedUser:", error);
     res.status(400).send(error.message);
   }
 };
+
 
 // Obtener todos los QRs
 export const getQrs = async (req, res) => {
@@ -81,21 +93,24 @@ export const getQrById = async (req, res) => {
 };
 
 // Actualizar QR
+// controllers/qrControllers/index.js
+
 export const updateQr = async (req, res) => {
   try {
     const { id } = req.params;
-    const { value, nombre, telefono, mail, startTime, endTime } = req.body;
-    const qrActualizado = await Qr.findByIdAndUpdate(
+    const { service, details, isUsed } = req.body;
+    
+    const updatedQr = await Qr.findByIdAndUpdate(
       id,
-      { value, nombre, telefono, mail, startTime, endTime },
+      { $set: { service, details, isUsed } },
       { new: true }
     );
 
-    if (!qrActualizado) {
+    if (!updatedQr) {
       return res.status(404).send("QR no encontrado");
     }
 
-    res.status(200).json({ message: "QR actualizado exitosamente", qr: qrActualizado });
+    res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
   } catch (error) {
     console.error("Error en updateQr:", error);
     res.status(400).send(error.message);
@@ -142,6 +157,7 @@ export const useQr = async (req, res) => {
     }
 
     qr.usageCount += 1;
+    qr.isUsed = true; // Marcar como usado
     await qr.save();
 
     res.status(200).json({ message: "QR usado exitosamente", usageCount: qr.usageCount });
