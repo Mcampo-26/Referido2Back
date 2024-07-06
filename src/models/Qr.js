@@ -6,6 +6,16 @@ const QRSchema = new mongoose.Schema({
     ref: "Usuario",
     required: true,
   },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Usuario",
+    required: true,
+  },
+  empresaId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Empresa",
+    required: true,
+  },
   value: {
     type: String,
     required: true,
@@ -38,6 +48,17 @@ const QRSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  service: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Servicio",
+  },
+  details: {
+    type: String,
+  },
+  isUsed: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 export default mongoose.model("Qr", QRSchema);
