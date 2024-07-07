@@ -21,9 +21,6 @@ export const loginUsuario = async (req, res) => {
     }
 };
 
-
-
-
 // Controlador para el logout de usuario
 export const logoutUsuario = async (req, res) => {
     try {
@@ -37,16 +34,27 @@ export const logoutUsuario = async (req, res) => {
 // Controlador para crear un usuario
 export const createUsuario = async (req, res) => {
     try {
-      const { nombre, email, password } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      const usuario = new Usuario({ nombre, email, password: hashedPassword });
-      await usuario.save();
-      res.status(201).json({ message: "Usuario creado exitosamente", usuario });
+        const { nombre, email, password } = req.body;
+        
+        // Verificar si el usuario o correo ya existen
+        const existingUser = await Usuario.findOne({
+            $or: [{ nombre }, { email }]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'Usuario o correo electrónico ya existe' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const usuario = new Usuario({ nombre, email, password: hashedPassword });
+
+        await usuario.save();
+        res.status(201).json({ message: "Usuario creado exitosamente", usuario });
     } catch (error) {
-      res.status(400).send(error.message);
+        console.error('Error al crear usuario:', error);
+        res.status(400).send(error.message);
     }
-  };
+};
 
 // Controlador para obtener todos los usuarios
 export const getUsuarios = async (req, res) => {
@@ -111,10 +119,6 @@ export const updateUsuario = async (req, res) => {
         res.status(500).send("Error al actualizar usuario");
     }
 };
-
-
-
-
 
 // Controlador para eliminar un usuario por ID
 export const deleteUsuarioById = async (req, res) => {
