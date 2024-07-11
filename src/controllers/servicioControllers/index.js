@@ -1,26 +1,26 @@
-import Servicio from "../../models/Servicio.js"; // Asegúrate de tener el modelo Servicio en la carpeta models
+import Servicio from "../../models/Servicio.js"; 
 
 // Controlador para crear un servicio
 export const createServicio = async (req, res) => {
   try {
-    const { name } = req.body; // Desestructura los datos del cuerpo de la solicitud
-    const servicio = new Servicio({ name }); // Crea una nueva instancia del modelo de servicios
-    await servicio.save(); // Guarda el nuevo servicio en la base de datos
+    const { name, empresaId } = req.body; 
+    const servicio = new Servicio({ name, empresaId }); 
+    await servicio.save(); 
     res.status(200).send("Servicio creado exitosamente");
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message); 
   }
 };
 
 // Controlador para obtener todos los servicios con paginación
 export const getServicios = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query; // Desestructura los parámetros de consulta
+    const { page = 1, limit = 10 } = req.query; 
     const servicios = await Servicio.find()
-      .skip((page - 1) * limit) // Salta los documentos anteriores según la página y el límite
-      .limit(Number(limit)); // Limita el número de documentos devueltos según el límite
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-    const total = await Servicio.countDocuments(); // Cuenta el número total de documentos
+    const total = await Servicio.countDocuments(); 
 
     res.status(200).json({
       servicios,
@@ -29,7 +29,7 @@ export const getServicios = async (req, res) => {
       currentPage: Number(page),
     });
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message); 
   }
 };
 
@@ -39,7 +39,7 @@ export const getAllServicios = async (req, res) => {
     const servicios = await Servicio.find();
     res.status(200).json(servicios);
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message); 
   }
 };
 
@@ -77,5 +77,16 @@ export const deleteServicioById = async (req, res) => {
     res.status(200).json({ message: 'Servicio eliminado exitosamente' });
   } catch (error) {
     res.status(500).json({ error: 'Ocurrió un error al eliminar el servicio' });
+  }
+};
+
+// Controlador para obtener servicios por empresa
+export const getServiciosByEmpresaId = async (req, res) => {
+  try {
+    const { empresaId } = req.params;
+    const servicios = await Servicio.find({ empresaId });
+    res.status(200).json(servicios);
+  } catch (error) {
+    res.status(400).send(error.message);
   }
 };
