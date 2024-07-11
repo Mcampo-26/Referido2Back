@@ -12,9 +12,15 @@ const QRSchema = new mongoose.Schema({
     required: true,
   },
   empresaId: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Empresa",
-    required: true,
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Empresa",
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    }
   },
   value: {
     type: String,
@@ -47,6 +53,10 @@ const QRSchema = new mongoose.Schema({
   base64Image: {
     type: String,
     required: true,
+  },
+  date: { 
+    type: Date, 
+    required: true 
   },
   service: {
     type: mongoose.Schema.Types.ObjectId,
