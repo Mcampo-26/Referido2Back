@@ -1,5 +1,6 @@
 import qr from 'qr-image';
 import Qr from "../../models/Qr.js";
+import Empresa from '../../models/Empresa.js'; // Asegúrate de importar el modelo Empresa
 import Usuario from "../../models/Usuario.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -9,37 +10,73 @@ import fs from 'fs';
 
 export const createQr = async (req, res) => {
   try {
-    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime } = req.body;
+    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime, date } = req.body;
+
+    // Buscar la empresa por su ID para obtener su nombre
+    const empresa = await Empresa.findById(empresaId);
+    if (!empresa) {
+      return res.status(404).json({ message: "Empresa no encontrada" });
+    }
 
     // Crear el objeto de QR para obtener el ID
     const newQr = new Qr({
       userId,
       assignedTo,
-      empresaId,
+      empresaId: {
+        _id: empresa._id,
+        name: empresa.name
+      },
       value,
       nombre,
       telefono,
       mail,
       startTime,
-      endTime
+      endTime,
+      date
     });
 
-    const qrData = `id: ${newQr._id}\nTexto: ${value}\nNombre: ${nombre}\nTeléfono: ${telefono}\nCorreo: ${mail}\nHora de inicio: ${startTime}\nHora de fin: ${endTime}`;
-    const qrImage = qr.imageSync(qrData, { type: 'png', ec_level: 'M', size: 10, margin: 1 });
+    // Crear un objeto JSON con los datos simplificados
+    const qrData = {
+      id: newQr._id.toString(),
+      uId: userId,
+      aId: assignedTo,
+      eId: empresa._id,
+      eName: empresa.name, // Asegúrate de incluir el nombre de la empresa
+      v: value,
+      n: nombre,
+      t: telefono,
+      m: mail,
+      sT: startTime,
+      eT: endTime,
+      d: date
+    };
+
+    // Convertir el objeto JSON a una cadena y generarlo como QR
+    const qrString = JSON.stringify(qrData);
+    const qrImage = qr.imageSync(qrString, { type: 'png', ec_level: 'H', size: 10, margin: 1 });
     const base64Image = qrImage.toString('base64');
 
     // Asignar la imagen base64 al QR antes de guardarlo
     newQr.base64Image = base64Image;
 
     await newQr.save();
-    res.status(201).json({ message: "QR creado exitosamente", newQr });
+
+    // Asegúrate de que la respuesta incluya el nombre de la empresa
+    res.status(201).json({
+      message: "QR creado exitosamente",
+      newQr: {
+        ...newQr.toObject(),
+        empresaId: {
+          _id: empresa._id,
+          name: empresa.name
+        }
+      }
+    });
   } catch (error) {
     console.error("Error en createQr:", error);
     res.status(400).send(error.message);
   }
 };
-
-
 
 
 
@@ -78,10 +115,11 @@ export const getQrs = async (req, res) => {
 };
 
 // Obtener QR por ID
+// Obtener QR por ID y populando empresaId
 export const getQrById = async (req, res) => {
   try {
     const { id } = req.params;
-    const qr = await Qr.findById(id);
+    const qr = await Qr.findById(id).populate('empresaId', 'name'); // Popula el campo empresaId con el nombre de la empresa
     if (!qr) {
       return res.status(404).json({ message: "QR no encontrado" });
     }
