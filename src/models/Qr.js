@@ -1,3 +1,4 @@
+// model/Qr.js
 import mongoose from "mongoose";
 
 const QRSchema = new mongoose.Schema({
@@ -49,6 +50,10 @@ const QRSchema = new mongoose.Schema({
   usageCount: {
     type: Number,
     default: 0,
+  },
+  maxUsageCount: { // Nuevo campo para cantidad máxima de usos
+    type: Number,
+    required: true,
   },
   base64Image: {
     type: String,
