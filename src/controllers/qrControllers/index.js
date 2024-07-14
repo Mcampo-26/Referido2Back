@@ -1,24 +1,21 @@
 import qr from 'qr-image';
 import Qr from "../../models/Qr.js";
-import Empresa from '../../models/Empresa.js'; // Asegúrate de importar el modelo Empresa
+import Empresa from '../../models/Empresa.js';
 import Usuario from "../../models/Usuario.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 
 // Crear QR
-
 export const createQr = async (req, res) => {
   try {
-    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime, date } = req.body;
+    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime, date, maxUsageCount } = req.body;
 
-    // Buscar la empresa por su ID para obtener su nombre
     const empresa = await Empresa.findById(empresaId);
     if (!empresa) {
       return res.status(404).json({ message: "Empresa no encontrada" });
     }
 
-    // Crear el objeto de QR para obtener el ID
     const newQr = new Qr({
       userId,
       assignedTo,
@@ -32,36 +29,36 @@ export const createQr = async (req, res) => {
       mail,
       startTime,
       endTime,
-      date
+      date,
+      maxUsageCount
     });
 
-    // Crear un objeto JSON con los datos simplificados
     const qrData = {
       id: newQr._id.toString(),
       uId: userId,
       aId: assignedTo,
       eId: empresa._id,
-      eName: empresa.name, // Asegúrate de incluir el nombre de la empresa
+      eName: empresa.name,
       v: value,
       n: nombre,
       t: telefono,
       m: mail,
       sT: startTime,
       eT: endTime,
-      d: date
+      d: date,
+      mUC: maxUsageCount
     };
 
-    // Convertir el objeto JSON a una cadena y generarlo como QR
+    console.log('Datos del QR a ser generados:', qrData);
+
     const qrString = JSON.stringify(qrData);
     const qrImage = qr.imageSync(qrString, { type: 'png', ec_level: 'H', size: 10, margin: 1 });
     const base64Image = qrImage.toString('base64');
 
-    // Asignar la imagen base64 al QR antes de guardarlo
     newQr.base64Image = base64Image;
 
     await newQr.save();
 
-    // Asegúrate de que la respuesta incluya el nombre de la empresa
     res.status(201).json({
       message: "QR creado exitosamente",
       newQr: {
@@ -78,8 +75,7 @@ export const createQr = async (req, res) => {
   }
 };
 
-
-
+// Obtener QRs por usuario asignado
 export const getQrsByAssignedUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -92,7 +88,6 @@ export const getQrsByAssignedUser = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
-
 
 // Obtener todos los QRs
 export const getQrs = async (req, res) => {
@@ -115,11 +110,10 @@ export const getQrs = async (req, res) => {
 };
 
 // Obtener QR por ID
-// Obtener QR por ID y populando empresaId
 export const getQrById = async (req, res) => {
   try {
     const { id } = req.params;
-    const qr = await Qr.findById(id).populate('empresaId', 'name'); // Popula el campo empresaId con el nombre de la empresa
+    const qr = await Qr.findById(id).populate('empresaId', 'name');
     if (!qr) {
       return res.status(404).json({ message: "QR no encontrado" });
     }
@@ -130,23 +124,24 @@ export const getQrById = async (req, res) => {
   }
 };
 
-// Actualizar QR
-// controllers/qrControllers/index.js
-
 export const updateQr = async (req, res) => {
   try {
     const { id } = req.params;
-    const { service, details, isUsed } = req.body;
-    
-    const updatedQr = await Qr.findByIdAndUpdate(
-      id,
-      { $set: { service, details, isUsed } },
-      { new: true }
-    );
+    const { service, details } = req.body;
 
-    if (!updatedQr) {
+    console.log(`Buscando QR con ID: ${id}`); // Agrega este registro
+
+    const qr = await Qr.findById(id);
+    if (!qr) {
       return res.status(404).send("QR no encontrado");
     }
+
+    qr.service = service || qr.service;
+    qr.details = details || qr.details;
+    qr.usageCount = (qr.usageCount || 0) + 1;
+    qr.isUsed = qr.usageCount >= qr.maxUsageCount;
+
+    const updatedQr = await qr.save();
 
     res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
   } catch (error) {
@@ -155,7 +150,32 @@ export const updateQr = async (req, res) => {
   }
 };
 
-// Eliminar QR
+// Incrementar el contador de uso y verificar el horario de uso
+export const useQr = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const qr = await Qr.findById(id);
+
+    if (!qr) {
+      return res.status(404).json({ message: 'QR no encontrado' });
+    }
+
+    if (qr.usageCount < qr.maxUsageCount) {
+      qr.usageCount += 1;
+      if (qr.usageCount >= qr.maxUsageCount) {
+        qr.isUsed = true;
+      }
+      await qr.save();
+      res.status(200).json(qr);
+    } else {
+      return res.status(400).json({ message: 'QR ya ha sido utilizado el número máximo de veces' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error al usar QR', error });
+  }
+};
+
+
 export const deleteQrById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -170,44 +190,8 @@ export const deleteQrById = async (req, res) => {
   }
 };
 
-// Incrementar el contador de uso y verificar el horario de uso
-export const useQr = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const qr = await Qr.findById(id);
-    if (!qr) {
-      return res.status(404).json({ message: "QR no encontrado" });
-    }
-
-    const currentTime = new Date();
-    const currentHour = currentTime.getHours();
-    const currentMinute = currentTime.getMinutes();
-
-    const [startHour, startMinute] = qr.startTime.split(':').map(Number);
-    const [endHour, endMinute] = qr.endTime.split(':').map(Number);
-
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
-    const startTimeInMinutes = startHour * 60 + startMinute;
-    const endTimeInMinutes = endHour * 60 + endMinute;
-
-    if (currentTimeInMinutes < startTimeInMinutes || currentTimeInMinutes > endTimeInMinutes) {
-      return res.status(403).json({ message: "QR no se puede usar en este horario" });
-    }
-
-    qr.usageCount += 1;
-    qr.isUsed = true; // Marcar como usado
-    await qr.save();
-
-    res.status(200).json({ message: "QR usado exitosamente", usageCount: qr.usageCount });
-  } catch (error) {
-    console.error("Error en useQr:", error);
-    res.status(500).send(error.message);
-  }
-};
 
 // Generar QR
-
-// Define __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -224,7 +208,6 @@ export const generateQr = (req, res) => {
     const fileName = `qr-code.png`;
     const qrCodePath = path.join(qrDir, fileName);
 
-    // Verificar si el directorio `qrImagen` existe, si no, crearlo
     if (!fs.existsSync(qrDir)) {
       fs.mkdirSync(qrDir, { recursive: true });
     }
