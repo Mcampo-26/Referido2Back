@@ -1,36 +1,35 @@
-import Empresa from "../../models/Empresa.js"; // Asegúrate de tener el modelo Empresa en la carpeta models
+import Empresa from "../../models/Empresa.js";
 
 // Controlador para crear una empresa
 export const createEmpresa = async (req, res) => {
   try {
-    const { idEmpresa, name } = req.body; // Desestructura los datos del cuerpo de la solicitud
-    const empresa = new Empresa({ idEmpresa, name }); // Crea una nueva instancia del modelo de empresas
-    await empresa.save(); // Guarda la nueva empresa en la base de datos
+    const { name } = req.body;
+    const empresa = new Empresa({ name });
+    await empresa.save();
     res.status(200).send("Empresa creada exitosamente");
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message);
   }
 };
 
 // Controlador para obtener todas las empresas con paginación
 export const getEmpresas = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query; // Desestructura los parámetros de consulta
+    const { page = 1, limit = 10 } = req.query;
     const empresas = await Empresa.find()
-      .skip((page - 1) * limit) // Salta los documentos anteriores según la página y el límite
-      .limit(Number(limit)); // Limita el número de documentos devueltos según el límite
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-    const total = await Empresa.countDocuments(); // Cuenta el número total de documentos
+    const total = await Empresa.countDocuments();
 
-        res.status(200).json({
+    res.status(200).json({
       empresas,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),
     });
   } catch (error) {
-    console.error('Error al obtener empresas:', error);
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message);
   }
 };
 
@@ -40,7 +39,21 @@ export const getAllEmpresas = async (req, res) => {
     const empresas = await Empresa.find();
     res.status(200).json(empresas);
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    res.status(400).send(error.message);
+  }
+};
+
+// Controlador para obtener una empresa por ID
+export const getEmpresaById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const empresa = await Empresa.findById(id);
+    if (!empresa) {
+      return res.status(404).send("Empresa no encontrada");
+    }
+    res.status(200).json(empresa);
+  } catch (error) {
+    res.status(400).send(error.message);
   }
 };
 
@@ -50,7 +63,6 @@ export const updateEmpresa = async (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
 
-    // Encuentra la empresa por ID y actualiza el nombre
     const empresaActualizada = await Empresa.findByIdAndUpdate(
       id,
       { name },
@@ -77,7 +89,6 @@ export const deleteEmpresaById = async (req, res) => {
     }
     res.status(200).json({ message: 'Empresa eliminada exitosamente' });
   } catch (error) {
-    console.error('Error al eliminar empresa:', error);
     res.status(500).json({ error: 'Ocurrió un error al eliminar la empresa' });
   }
 };
