@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Crear QR
+// Crear QR
 export const createQr = async (req, res) => {
   try {
     const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime, date, maxUsageCount } = req.body;
@@ -30,7 +31,9 @@ export const createQr = async (req, res) => {
       startTime,
       endTime,
       date,
-      maxUsageCount
+      maxUsageCount,
+      isUsed: false, // Asegúrate de incluir `isUsed` aquí
+      usageCount: 0, // Inicializar `usageCount` a 0
     });
 
     const qrData = {
@@ -46,7 +49,9 @@ export const createQr = async (req, res) => {
       sT: startTime,
       eT: endTime,
       d: date,
-      mUC: maxUsageCount
+      mUC: maxUsageCount,
+      uC: 0, // Inicializar `usageCount` a 0
+      isUsed: false // Asegúrate de incluir `isUsed` aquí
     };
 
     console.log('Datos del QR a ser generados:', qrData);
@@ -74,6 +79,7 @@ export const createQr = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
+
 
 // Obtener QRs por usuario asignado
 export const getQrsByAssignedUser = async (req, res) => {
@@ -129,26 +135,40 @@ export const updateQr = async (req, res) => {
     const { id } = req.params;
     const { service, details } = req.body;
 
-    console.log(`Buscando QR con ID: ${id}`); // Agrega este registro
+    console.log(`Buscando QR con ID: ${id}`);
 
     const qr = await Qr.findById(id);
     if (!qr) {
       return res.status(404).send("QR no encontrado");
     }
 
-    qr.service = service || qr.service;
-    qr.details = details || qr.details;
-    qr.usageCount = (qr.usageCount || 0) + 1;
-    qr.isUsed = qr.usageCount >= qr.maxUsageCount;
+    // Actualizar solo si service y details son proporcionados
+    qr.service = service !== undefined ? service : qr.service;
+    qr.details = details !== undefined ? details : qr.details;
 
-    const updatedQr = await qr.save();
+    // Incrementar el uso si aún no ha alcanzado el máximo permitido
+    if (qr.usageCount < qr.maxUsageCount) {
+      qr.usageCount += 1;
 
-    res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
+      // Si el QR ha alcanzado el uso máximo justo después de esta actualización, lo marcamos como usado
+      if (qr.usageCount >= qr.maxUsageCount) {
+        qr.isUsed = true;
+      }
+
+      const updatedQr = await qr.save();
+      console.log(`Uso actualizado: ${qr.usageCount}/${qr.maxUsageCount}`);
+      res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
+    } else {
+      res.status(400).json({ message: "El QR ya no puede ser usado." });
+    }
   } catch (error) {
     console.error("Error en updateQr:", error);
-    res.status(400).send(error.message);
+    res.status(400).json({ message: "Error al actualizar el QR", error: error.message });
   }
 };
+
+
+
 
 // Incrementar el contador de uso y verificar el horario de uso
 export const useQr = async (req, res) => {
@@ -160,20 +180,19 @@ export const useQr = async (req, res) => {
       return res.status(404).json({ message: 'QR no encontrado' });
     }
 
+    // Incrementar el uso si aún no ha alcanzado el máximo
     if (qr.usageCount < qr.maxUsageCount) {
       qr.usageCount += 1;
-      if (qr.usageCount >= qr.maxUsageCount) {
-        qr.isUsed = true;
-      }
-      await qr.save();
-      res.status(200).json(qr);
-    } else {
-      return res.status(400).json({ message: 'QR ya ha sido utilizado el número máximo de veces' });
     }
+
+    await qr.save();
+    res.status(200).json(qr);
   } catch (error) {
     res.status(500).json({ message: 'Error al usar QR', error });
   }
 };
+
+
 
 
 export const deleteQrById = async (req, res) => {
