@@ -10,6 +10,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routerServicio from './src/routes/Servicio/Index.js';
+import routerPdf from './src/routes/Pdf/index.js';
 
 // Configurar dotenv para leer el archivo .env
 dotenv.config();
@@ -53,3 +54,4 @@ app.use('/Qr', qrRoutes);
 app.use('/Roles', routerRoles);
 app.use ('/Empresa',routerEmpresa)
 app.use('/Servicio', routerServicio)
+app.use('/Pdf', routerPdf)
