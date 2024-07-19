@@ -1,5 +1,18 @@
-// model/Qr.js
 import mongoose from "mongoose";
+
+const UpdateSchema = new mongoose.Schema({
+  service: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Servicio",
+  },
+  details: {
+    type: String,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  }
+});
 
 const QRSchema = new mongoose.Schema({
   userId: {
@@ -73,7 +86,8 @@ const QRSchema = new mongoose.Schema({
   isUsed: {
     type: Boolean,
     default: false,
-  }
+  },
+  updates: [UpdateSchema], // Añadir el campo de actualizaciones
 });
 
 export default mongoose.model("Qr", QRSchema);
