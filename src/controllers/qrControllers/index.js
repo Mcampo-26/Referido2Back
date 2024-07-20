@@ -138,15 +138,17 @@ export const updateQr = async (req, res) => {
 
     console.log(`Buscando QR con ID: ${id}`);
 
+    // Encuentra el QR por su ID
     const qr = await Qr.findById(id);
     if (!qr) {
       return res.status(404).send("QR no encontrado");
     }
 
-    // Crear un nuevo objeto de actualización
+    // Crear un nuevo objeto de actualización con la fecha actual
     const newUpdate = {
       service,
       details,
+      updatedAt: new Date()  // Añadir la fecha de actualización
     };
 
     // Agregar la nueva actualización al array de actualizaciones
@@ -161,17 +163,19 @@ export const updateQr = async (req, res) => {
         qr.isUsed = true;
       }
 
+      // Guarda el QR actualizado en la base de datos
       const updatedQr = await qr.save();
       console.log(`Uso actualizado: ${qr.usageCount}/${qr.maxUsageCount}`);
-      res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
+      return res.status(200).json({ message: "QR actualizado exitosamente", qr: updatedQr });
     } else {
-      res.status(400).json({ message: "El QR ya no puede ser usado." });
+      return res.status(400).json({ message: "El QR ya no puede ser usado." });
     }
   } catch (error) {
     console.error("Error en updateQr:", error);
-    res.status(400).json({ message: "Error al actualizar el QR", error: error.message });
+    return res.status(400).json({ message: "Error al actualizar el QR", error: error.message });
   }
 };
+
 
 
 
