@@ -54,4 +54,8 @@ app.use('/Qr', qrRoutes);
 app.use('/Roles', routerRoles);
 app.use ('/Empresa',routerEmpresa)
 app.use('/Servicio', routerServicio)
+<<<<<<< HEAD
 app.use('/Pdf', routerPdf)
+=======
+app.use('/Pdf', routerPdf)
+>>>>>>> c2e165e690364d3930de25f96960e6d9bb5ede11
