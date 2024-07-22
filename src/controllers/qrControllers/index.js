@@ -177,13 +177,6 @@ export const updateQr = async (req, res) => {
 };
 
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> c2e165e690364d3930de25f96960e6d9bb5ede11
 
 // Incrementar el contador de uso y verificar el horario de uso
 export const useQr = async (req, res) => {
