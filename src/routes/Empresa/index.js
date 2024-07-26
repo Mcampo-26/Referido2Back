@@ -5,7 +5,8 @@ import {
   updateEmpresa,
   deleteEmpresaById,
   getAllEmpresas,
-  getEmpresaById
+  getEmpresaById,
+  getUsuariosByEmpresa 
 } from "../../controllers/empresaControllers/index.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/all", getAllEmpresas);
 router.get("/:id", getEmpresaById);
 router.put("/update/:id", updateEmpresa);
 router.delete("/delete/:id", deleteEmpresaById);
+router.get('/empresa/:empresaId', getUsuariosByEmpresa);
 
 export default router;
