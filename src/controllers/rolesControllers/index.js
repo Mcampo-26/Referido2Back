@@ -42,7 +42,8 @@ export const getAllRoles = async (req, res) => {
     const roles = await Role.find();
     res.status(200).json(roles);
   } catch (error) {
-    res.status(400).send(error.message); // Maneja los errores
+    console.error("Error al obtener todos los roles:", error.message);
+    res.status(500).send("Error al obtener todos los roles");
   }
 };
 

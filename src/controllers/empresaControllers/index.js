@@ -39,7 +39,8 @@ export const getAllEmpresas = async (req, res) => {
     const empresas = await Empresa.find();
     res.status(200).json(empresas);
   } catch (error) {
-    res.status(400).send(error.message);
+    console.error("Error al obtener todas las empresas:", error.message);
+    res.status(500).send("Error al obtener todas las empresas");
   }
 };
 
@@ -90,5 +91,16 @@ export const deleteEmpresaById = async (req, res) => {
     res.status(200).json({ message: 'Empresa eliminada exitosamente' });
   } catch (error) {
     res.status(500).json({ error: 'Ocurrió un error al eliminar la empresa' });
+  }
+};
+
+export const getUsuariosByEmpresa = async (req, res) => {
+  try {
+    const { empresaId } = req.params;
+    const usuarios = await usuarios.find({ empresa: empresaId }).populate('empresa');
+
+    res.status(200).json(usuarios);
+  } catch (error) {
+    res.status(400).send(error.message);
   }
 };

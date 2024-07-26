@@ -1,5 +1,7 @@
 import Usuario from '../../models/Usuario.js';
 import Role from '../../models/Role.js';
+import Empresa from '../../models/Empresa.js'; // Asegúrate de que la ruta sea correcta
+
 import bcrypt from 'bcryptjs';
 
 // Controlador para el login de usuario
@@ -61,7 +63,8 @@ export const getUsuarios = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
         const usuarios = await Usuario.find()
-            .populate('role', 'name') // Popula el campo role y solo trae el campo name
+            .populate('role', 'name') 
+            .populate('empresa', 'name')// Popula el campo role y solo trae el campo name
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Usuario.countDocuments();
@@ -79,9 +82,9 @@ export const getUsuarios = async (req, res) => {
 export const updateUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, email, direccion, telefono, role } = req.body;
+        const { nombre, email, direccion, telefono, role, empresa } = req.body;
 
-        console.log("Datos recibidos para actualizar:", { id, nombre, email, direccion, telefono, role });
+        console.log("Datos recibidos para actualizar:", { id, nombre, email, direccion, telefono, role, empresa });
 
         // Validar el rol
         if (role) {
@@ -93,6 +96,16 @@ export const updateUsuario = async (req, res) => {
             console.log("Rol encontrado:", roleDocument);
         }
 
+        // Validar la empresa
+        if (empresa) {
+            const empresaDocument = await Empresa.findById(empresa);
+            if (!empresaDocument) {
+                console.error("La empresa especificada no existe:", empresa);
+                return res.status(400).send("La empresa especificada no existe.");
+            }
+            console.log("Empresa encontrada:", empresaDocument);
+        }
+
         // Preparar datos para la actualización
         const updateData = {};
         if (nombre !== undefined) updateData.nombre = nombre;
@@ -100,6 +113,7 @@ export const updateUsuario = async (req, res) => {
         if (direccion !== undefined) updateData.direccion = direccion;
         if (telefono !== undefined) updateData.telefono = telefono;
         if (role !== undefined) updateData.role = role;
+        if (empresa !== undefined) updateData.empresa = empresa;
 
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
             id,
@@ -119,6 +133,7 @@ export const updateUsuario = async (req, res) => {
         res.status(500).send("Error al actualizar usuario");
     }
 };
+
 
 // Controlador para eliminar un usuario por ID
 export const deleteUsuarioById = async (req, res) => {
