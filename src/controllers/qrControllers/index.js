@@ -7,10 +7,9 @@ import path from 'path';
 import fs from 'fs';
 
 // Crear QR
-// Crear QR
 export const createQr = async (req, res) => {
   try {
-    const { userId, assignedTo, empresaId, value, nombre, telefono, mail, startTime, endTime, date, maxUsageCount } = req.body;
+    const { userId, assignedTo, empresaId, nombre, telefono, mail, startTime, endTime, date, maxUsageCount } = req.body;
 
     const empresa = await Empresa.findById(empresaId);
     if (!empresa) {
@@ -24,7 +23,6 @@ export const createQr = async (req, res) => {
         _id: empresa._id,
         name: empresa.name
       },
-      value,
       nombre,
       telefono,
       mail,
@@ -42,7 +40,6 @@ export const createQr = async (req, res) => {
       aId: assignedTo,
       eId: empresa._id,
       eName: empresa.name,
-      v: value,
       n: nombre,
       t: telefono,
       m: mail,
@@ -80,7 +77,6 @@ export const createQr = async (req, res) => {
   }
 };
 
-
 // Obtener QRs por usuario asignado
 export const getQrsByAssignedUser = async (req, res) => {
   try {
@@ -95,6 +91,7 @@ export const getQrsByAssignedUser = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
+
 // Obtener todos los QRs
 export const getQrs = async (req, res) => {
   try {
@@ -130,11 +127,11 @@ export const getQrById = async (req, res) => {
   }
 };
 
-
+// Actualizar QR con descuento y detalles de servicio
 export const updateQr = async (req, res) => {
   try {
     const { id } = req.params;
-    const { service, details } = req.body;
+    const { service, details, discount } = req.body;
 
     console.log(`Buscando QR con ID: ${id}`);
 
@@ -144,10 +141,11 @@ export const updateQr = async (req, res) => {
       return res.status(404).send("QR no encontrado");
     }
 
-    // Crear un nuevo objeto de actualización con la fecha actual
+    // Crear un nuevo objeto de actualización con la fecha actual y el descuento
     const newUpdate = {
       service,
       details,
+      discount, // Añadir el descuento
       updatedAt: new Date()  // Añadir la fecha de actualización
     };
 
@@ -176,8 +174,6 @@ export const updateQr = async (req, res) => {
   }
 };
 
-
-
 // Incrementar el contador de uso y verificar el horario de uso
 export const useQr = async (req, res) => {
   try {
@@ -200,9 +196,7 @@ export const useQr = async (req, res) => {
   }
 };
 
-
-
-
+// Eliminar QR por ID
 export const deleteQrById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -216,7 +210,6 @@ export const deleteQrById = async (req, res) => {
     res.status(500).json({ error: "Ocurrió un error al eliminar el QR" });
   }
 };
-
 
 // Generar QR
 const __filename = fileURLToPath(import.meta.url);
