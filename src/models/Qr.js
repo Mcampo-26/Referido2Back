@@ -8,6 +8,11 @@ const UpdateSchema = new mongoose.Schema({
   details: {
     type: String,
   },
+  discount: {
+    type: Number,
+    required: true,
+    default: 0
+  },
   updatedAt: {
     type: Date,
     default: Date.now,
@@ -36,10 +41,6 @@ const QRSchema = new mongoose.Schema({
       required: true,
     }
   },
-  value: {
-    type: String,
-    required: true,
-  },
   nombre: {
     type: String,
     required: true,
@@ -64,7 +65,7 @@ const QRSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  maxUsageCount: { // Nuevo campo para cantidad máxima de usos
+  maxUsageCount: { 
     type: Number,
     required: true,
   },
