@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Usuario from '../../models/Usuario.js';
 import Role from '../../models/Role.js';
 import Empresa from '../../models/Empresa.js'; // Asegúrate de que la ruta sea correcta
@@ -9,7 +10,9 @@ export const loginUsuario = async (req, res) => {
     console.log("Datos recibidos:", req.body);
     try {
         const { email, password } = req.body;
-        const usuario = await Usuario.findOne({ email }).populate('role'); // Popula el rol para obtener el nombre
+        const usuario = await Usuario.findOne({ email })
+            .populate('role')   // Popula el rol para obtener el nombre
+            .populate('empresa'); // Popula la empresa para obtener el nombre
 
         if (usuario && await bcrypt.compare(password, usuario.password)) {
             console.log("Contraseña correcta");
@@ -22,6 +25,7 @@ export const loginUsuario = async (req, res) => {
         res.status(500).send(error.message);
     }
 };
+
 
 // Controlador para el logout de usuario
 export const logoutUsuario = async (req, res) => {
@@ -36,8 +40,14 @@ export const logoutUsuario = async (req, res) => {
 // Controlador para crear un usuario
 export const createUsuario = async (req, res) => {
     try {
-        const { nombre, email, password } = req.body;
-        
+        const { nombre, email, password, empresa: empresaNombre } = req.body;
+
+        // Buscar el ID de la empresa usando el nombre
+        const empresa = await Empresa.findOne({ name: empresaNombre });
+        if (!empresa) {
+            return res.status(400).json({ message: 'La empresa especificada no existe' });
+        }
+
         // Verificar si el usuario o correo ya existen
         const existingUser = await Usuario.findOne({
             $or: [{ nombre }, { email }]
@@ -48,7 +58,12 @@ export const createUsuario = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const usuario = new Usuario({ nombre, email, password: hashedPassword });
+        const usuario = new Usuario({ 
+            nombre, 
+            email, 
+            password: hashedPassword,
+            empresa: empresa._id  // Asignar el ObjectId de la empresa
+        });
 
         await usuario.save();
         res.status(201).json({ message: "Usuario creado exitosamente", usuario });
@@ -81,8 +96,20 @@ export const getUsuarios = async (req, res) => {
 // Controlador para obtener usuarios por empresa
 export const getUsuariosByEmpresa = async (req, res) => {
     const { empresaId } = req.params;
+
     try {
-        const usuarios = await Usuario.find({ empresa: empresaId }).populate('role').populate('empresa');
+        // Verifica si el empresaId es un ObjectId válido
+        if (!mongoose.Types.ObjectId.isValid(empresaId)) {
+            return res.status(400).send('ID de empresa no válido');
+        }
+
+        // Asegúrate de usar `new` para crear un ObjectId
+        const objectId = new mongoose.Types.ObjectId(empresaId);
+
+        const usuarios = await Usuario.find({ empresa: objectId })
+            .populate('role')
+            .populate('empresa');
+
         res.status(200).json(usuarios);
     } catch (error) {
         console.error('Error al obtener usuarios por empresa:', error);
