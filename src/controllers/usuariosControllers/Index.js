@@ -78,6 +78,17 @@ export const getUsuarios = async (req, res) => {
         res.status(400).send(error.message);
     }
 };
+// Controlador para obtener usuarios por empresa
+export const getUsuariosByEmpresa = async (req, res) => {
+    const { empresaId } = req.params;
+    try {
+        const usuarios = await Usuario.find({ empresa: empresaId }).populate('role').populate('empresa');
+        res.status(200).json(usuarios);
+    } catch (error) {
+        console.error('Error al obtener usuarios por empresa:', error);
+        res.status(500).send(error.message);
+    }
+};
 
 export const updateUsuario = async (req, res) => {
     try {
