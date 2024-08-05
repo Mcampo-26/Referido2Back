@@ -95,11 +95,20 @@ export const getQrsByAssignedUser = async (req, res) => {
 // Obtener todos los QRs
 export const getQrs = async (req, res) => {
   try {
+    const { userId, role } = req.user; // Suponiendo que tienes el userId y role en el request (mediante middleware de autenticación)
     const { page = 1, limit = 10 } = req.query;
-    const qrs = await Qr.find()
+
+    let query = {};
+
+    if (role === 'Admin') {
+      query.userId = userId; // Filtrar por el ID del usuario (Admin)
+    }
+
+    const qrs = await Qr.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit));
-    const total = await Qr.countDocuments();
+    const total = await Qr.countDocuments(query);
+
     res.status(200).json({
       qrs,
       total,
@@ -112,18 +121,26 @@ export const getQrs = async (req, res) => {
   }
 };
 
+
 // Obtener QR por ID
 export const getQrById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const qr = await Qr.findById(id).populate('empresaId', 'name');
+    const qr = await Qr.findById(req.params.id);
+
     if (!qr) {
-      return res.status(404).json({ message: "QR no encontrado" });
+      return res.status(404).json({ message: 'QR no encontrado' });
     }
+
+    // Verifica si el usuario autenticado es el creador del QR
+    // Convertimos ambos a string para evitar problemas de comparación
+    if (qr.userId.toString() !== req.user.userId.toString()) {
+      return res.status(403).json({ message: 'Acceso denegado: no eres el creador de este QR' });
+    }
+
     res.status(200).json(qr);
   } catch (error) {
-    console.error("Error en getQrById:", error);
-    res.status(400).send(error.message);
+    console.error('Error al obtener QR por ID:', error);
+    res.status(500).json({ message: 'Error al obtener QR' });
   }
 };
 
@@ -255,5 +272,17 @@ export const generateQr = (req, res) => {
   } catch (err) {
     console.error("Error en generateQr:", err);
     res.status(500).json({ error: 'Error generating QR code' });
+  }
+};
+
+export const getQrsByUser = async (req, res) => {
+  try {
+    const userId = req.user.userId; // Este es el ID del usuario autenticado
+    const qrs = await Qr.find({ userId })
+                        .populate('empresaId', 'name');
+    res.status(200).json(qrs);
+  } catch (error) {
+    console.error("Error en getQrsByUser:", error);
+    res.status(400).send(error.message);
   }
 };
