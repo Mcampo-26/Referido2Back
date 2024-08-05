@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Usuario from '../../models/Usuario.js';
 import Role from '../../models/Role.js';
 import Empresa from '../../models/Empresa.js'; // Asegúrate de que la ruta sea correcta
-
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 // Controlador para el login de usuario
@@ -16,7 +16,15 @@ export const loginUsuario = async (req, res) => {
 
         if (usuario && await bcrypt.compare(password, usuario.password)) {
             console.log("Contraseña correcta");
-            res.json({ message: "Login exitoso", usuario });
+
+            // Crear el token JWT
+            const token = jwt.sign(
+                { id: usuario._id, role: usuario.role.name }, // Datos que quieres almacenar en el token
+                process.env.JWT_SECRET, // Clave secreta para firmar el token
+                { expiresIn: '1h' } // Expiración del token (1 hora en este caso)
+            );
+
+            res.json({ message: "Login exitoso", usuario, token });
         } else {
             res.status(401).json({ message: "Credenciales inválidas" });
         }
