@@ -125,7 +125,7 @@ export const getQrs = async (req, res) => {
 // Obtener QR por ID
 export const getQrById = async (req, res) => {
   try {
-    const qr = await Qr.findById(req.params.id);
+    const qr = await Qr.findById(req.params.id).populate('empresaId', 'name');
 
     if (!qr) {
       return res.status(404).json({ message: 'QR no encontrado' });
@@ -133,24 +133,32 @@ export const getQrById = async (req, res) => {
 
     const userRole = req.user.role; // Asumiendo que el rol del usuario está almacenado en req.user.role
     const userId = req.user.userId; // ID del usuario autenticado
-
-    // Si el usuario es Admin, verifica si es el creador del QR
-    if (userRole === 'Admin' && qr.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: 'Acceso denegado: no eres el creador de este QR' });
-    }
+    const usuario = await Usuario.findById(userId).populate('empresa');
 
     // Si el usuario es SuperAdmin, permite el acceso sin restricciones
     if (userRole === 'SuperAdmin') {
       return res.status(200).json(qr);
     }
 
+    // Si el usuario es Admin, verifica si es el creador del QR o pertenece a la misma empresa
+    if (userRole === 'Admin') {
+      const perteneceMismaEmpresa = usuario.empresa && qr.empresaId && usuario.empresa._id.toString() === qr.empresaId._id.toString();
+
+      if (qr.userId.toString() === userId.toString() || perteneceMismaEmpresa) {
+        return res.status(200).json(qr);
+      } else {
+        return res.status(403).json({ message: 'Acceso denegado: no tienes permisos para acceder a este QR' });
+      }
+    }
+
     // Permitir el acceso al QR si las validaciones anteriores pasan
-    res.status(200).json(qr);
+    return res.status(200).json(qr);
   } catch (error) {
     console.error('Error al obtener QR por ID:', error);
     res.status(500).json({ message: 'Error al obtener QR' });
   }
 };
+
 
 // Actualizar QR con descuento y detalles de servicio
 export const updateQr = async (req, res) => {
