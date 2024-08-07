@@ -131,12 +131,20 @@ export const getQrById = async (req, res) => {
       return res.status(404).json({ message: 'QR no encontrado' });
     }
 
-    // Verifica si el usuario autenticado es el creador del QR
-    // Convertimos ambos a string para evitar problemas de comparación
-    if (qr.userId.toString() !== req.user.userId.toString()) {
+    const userRole = req.user.role; // Asumiendo que el rol del usuario está almacenado en req.user.role
+    const userId = req.user.userId; // ID del usuario autenticado
+
+    // Si el usuario es Admin, verifica si es el creador del QR
+    if (userRole === 'Admin' && qr.userId.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'Acceso denegado: no eres el creador de este QR' });
     }
 
+    // Si el usuario es SuperAdmin, permite el acceso sin restricciones
+    if (userRole === 'SuperAdmin') {
+      return res.status(200).json(qr);
+    }
+
+    // Permitir el acceso al QR si las validaciones anteriores pasan
     res.status(200).json(qr);
   } catch (error) {
     console.error('Error al obtener QR por ID:', error);
