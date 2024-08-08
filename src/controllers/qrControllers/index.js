@@ -125,7 +125,7 @@ export const getQrs = async (req, res) => {
 // Obtener QR por ID
 export const getQrById = async (req, res) => {
   try {
-    const qr = await Qr.findById(req.params.id);
+    const qr = await Qr.findById(req.params.id).populate('empresaId', 'name');
 
     if (!qr) {
       return res.status(404).json({ message: 'QR no encontrado' });
@@ -133,24 +133,32 @@ export const getQrById = async (req, res) => {
 
     const userRole = req.user.role; // Asumiendo que el rol del usuario está almacenado en req.user.role
     const userId = req.user.userId; // ID del usuario autenticado
-
-    // Si el usuario es Admin, verifica si es el creador del QR
-    if (userRole === 'Admin' && qr.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: 'Acceso denegado: no eres el creador de este QR' });
-    }
+    const usuario = await Usuario.findById(userId).populate('empresa');
 
     // Si el usuario es SuperAdmin, permite el acceso sin restricciones
     if (userRole === 'SuperAdmin') {
       return res.status(200).json(qr);
     }
 
+    // Si el usuario es Admin, verifica si es el creador del QR o pertenece a la misma empresa
+    if (userRole === 'Admin') {
+      const perteneceMismaEmpresa = usuario.empresa && qr.empresaId && usuario.empresa._id.toString() === qr.empresaId._id.toString();
+
+      if (qr.userId.toString() === userId.toString() || perteneceMismaEmpresa) {
+        return res.status(200).json(qr);
+      } else {
+        return res.status(403).json({ message: 'Acceso denegado: no tienes permisos para acceder a este QR' });
+      }
+    }
+
     // Permitir el acceso al QR si las validaciones anteriores pasan
-    res.status(200).json(qr);
+    return res.status(200).json(qr);
   } catch (error) {
     console.error('Error al obtener QR por ID:', error);
     res.status(500).json({ message: 'Error al obtener QR' });
   }
 };
+
 
 // Actualizar QR con descuento y detalles de servicio
 export const updateQr = async (req, res) => {
@@ -184,6 +192,21 @@ export const updateQr = async (req, res) => {
       // Si el QR ha alcanzado el uso máximo justo después de esta actualización, lo marcamos como usado
       if (qr.usageCount >= qr.maxUsageCount) {
         qr.isUsed = true;
+
+        // Elimina la imagen asociada si isUsed es true
+        if (qr.imagePath) {
+          const imagePath = path.join(__dirname, '..', qr.imagePath);
+          fs.unlink(imagePath, (err) => {
+            if (err) {
+              console.error("Error al eliminar la imagen:", err);
+            } else {
+              console.log(`Imagen eliminada: ${imagePath}`);
+              // Limpia la referencia de la imagen en la base de datos
+              qr.base64Image = null;
+              qr.imagePath = null;
+            }
+          });
+        }
       }
 
       // Guarda el QR actualizado en la base de datos
@@ -198,6 +221,7 @@ export const updateQr = async (req, res) => {
     return res.status(400).json({ message: "Error al actualizar el QR", error: error.message });
   }
 };
+
 
 // Incrementar el contador de uso y verificar el horario de uso
 export const useQr = async (req, res) => {
