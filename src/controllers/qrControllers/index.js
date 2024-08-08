@@ -192,6 +192,21 @@ export const updateQr = async (req, res) => {
       // Si el QR ha alcanzado el uso máximo justo después de esta actualización, lo marcamos como usado
       if (qr.usageCount >= qr.maxUsageCount) {
         qr.isUsed = true;
+
+        // Elimina la imagen asociada si isUsed es true
+        if (qr.imagePath) {
+          const imagePath = path.join(__dirname, '..', qr.imagePath);
+          fs.unlink(imagePath, (err) => {
+            if (err) {
+              console.error("Error al eliminar la imagen:", err);
+            } else {
+              console.log(`Imagen eliminada: ${imagePath}`);
+              // Limpia la referencia de la imagen en la base de datos
+              qr.base64Image = null;
+              qr.imagePath = null;
+            }
+          });
+        }
       }
 
       // Guarda el QR actualizado en la base de datos
@@ -206,6 +221,7 @@ export const updateQr = async (req, res) => {
     return res.status(400).json({ message: "Error al actualizar el QR", error: error.message });
   }
 };
+
 
 // Incrementar el contador de uso y verificar el horario de uso
 export const useQr = async (req, res) => {
